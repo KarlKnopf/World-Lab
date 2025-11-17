@@ -29,6 +29,7 @@
     width: 100%;
     aspect-ratio: 1;
     touch-action: manipulation;
+    position: relative;
   }
 
   .tile {
@@ -59,7 +60,7 @@
     height: 100%;
     background-color: #4caf50;
     width: 0%;
-    transition: width 0.2s;
+    transition: width 0.4s ease;
   }
 
   #moves, #timer, #score {
@@ -71,6 +72,19 @@
     padding: 8px 12px;
     margin: 2px;
     cursor: pointer;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    animation: confetti-fall 1s forwards;
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translate(0,0) rotate(0deg); opacity:1; }
+    100% { transform: translate(var(--x), 100vh) rotate(360deg); opacity:0; }
   }
 
   @media (max-width: 500px) {
@@ -236,6 +250,7 @@ function moveTile(x, y) {
             puzzlesSolved++;
             scoreDisplay.textContent = `Puzzles solved: ${puzzlesSolved}`;
             saveProgress();
+            showConfetti();
             alert('Puzzle Solved! Loading next image...');
             nextImagePuzzle();
         }
@@ -277,6 +292,7 @@ function startTimer() {
         if (timer <= 0) {
             clearInterval(timerInterval);
             carryoverMoves += MOVES_PER_SESSION;
+            animateMoveGain();
             alert(`25 minutes complete! You earned ${MOVES_PER_SESSION} moves.`);
             updateMovesDisplay();
             saveProgress();
@@ -289,6 +305,14 @@ function updateTimerBar() {
     timerBar.style.width = `${percent}%`;
 }
 
+function animateMoveGain() {
+    movesBar.style.transition = 'width 0.4s, background-color 0.2s';
+    movesBar.style.backgroundColor = '#ffd700'; // gold flash
+    setTimeout(() => {
+        movesBar.style.backgroundColor = '#4caf50';
+    }, 300);
+}
+
 function checkWin() {
     for (let y = 0; y < PUZZLE_SIZE; y++) {
         for (let x = 0; x < PUZZLE_SIZE; x++) {
@@ -299,6 +323,18 @@ function checkWin() {
         }
     }
     return true;
+}
+
+function showConfetti() {
+    for (let i = 0; i < 30; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}%`;
+        confetti.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 50%)`;
+        confetti.style.setProperty('--x', `${(Math.random()-0.5)*200}px`);
+        puzzleContainer.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 1000);
+    }
 }
 
 function saveProgress() {
