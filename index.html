@@ -68,7 +68,7 @@
     font-weight: bold;
   }
 
-  button, select {
+  button, select, input {
     padding: 8px 12px;
     margin: 2px;
     cursor: pointer;
@@ -102,6 +102,8 @@
     <option value="4">Normal (4x4)</option>
     <option value="5">Hard (5x5)</option>
   </select>
+  <label for="timerInput">Work session (minutes): </label>
+  <input type="number" id="timerInput" min="1" max="120" value="25">
   <button id="startButton">Start Puzzle</button>
 
   <div id="moves">Moves left: 0</div>
@@ -146,6 +148,7 @@ const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
 const difficultySelect = document.getElementById('difficultySelect');
+const timerInput = document.getElementById('timerInput');
 
 const moveSound = document.getElementById('moveSound');
 const completeSound = document.getElementById('completeSound');
@@ -243,7 +246,7 @@ function getNeighbors(x, y) {
 
 function moveTile(x, y) {
     if (movesLeft + carryoverMoves <= 0) {
-        alert('Out of moves! Complete a 25-minute session to earn more.');
+        alert('Out of moves! Complete a work session to earn more.');
         return;
     }
     const dx = Math.abs(x - emptyPos.x);
@@ -294,7 +297,8 @@ function updateMovesDisplay() {
 
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
-    timer = 25*60;
+    const sessionMinutes = parseInt(timerInput.value) || 25;
+    timer = sessionMinutes * 60; 
     updateTimerBar();
     timerInterval = setInterval(() => {
         timer--;
@@ -308,7 +312,7 @@ function startTimer() {
             rewardSound.currentTime = 0;
             rewardSound.play();
             animateMoveGain();
-            alert(`25 minutes complete! You earned ${MOVES_PER_SESSION} moves.`);
+            alert(`${sessionMinutes} minute session complete! You earned ${MOVES_PER_SESSION} moves.`);
             updateMovesDisplay();
             saveProgress();
         }
@@ -316,7 +320,7 @@ function startTimer() {
 }
 
 function updateTimerBar() {
-    const percent = ((25*60 - timer) / (25*60)) * 100;
+    const percent = ((parseInt(timerInput.value)*60 - timer) / (parseInt(timerInput.value)*60)) * 100;
     timerBar.style.width = `${percent}%`;
 }
 
