@@ -10,35 +10,56 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 20px;
+    margin: 10px;
   }
 
   #controls {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
   }
 
   #puzzle-container {
     display: grid;
     gap: 2px;
-    margin-bottom: 20px;
-    user-select: none;
+    width: 90vw;      /* scales to screen width */
+    max-width: 400px; /* maximum size on desktop */
+    aspect-ratio: 1;  /* always square */
+    touch-action: manipulation; /* mobile friendly */
   }
 
   .tile {
     background-size: cover;
     background-position: center;
     cursor: pointer;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: white;
+    user-select: none;
+    border-radius: 4px;
   }
 
-  #moves, #timer {
-    margin: 5px;
+  #moves, #timer, #score {
+    margin: 3px;
     font-weight: bold;
   }
 
   button {
     padding: 8px 12px;
-    margin: 5px;
+    margin: 2px;
     cursor: pointer;
+  }
+
+  @media (max-width: 500px) {
+    #controls {
+      width: 90vw;
+    }
   }
 </style>
 </head>
@@ -49,6 +70,7 @@
   <button id="startButton">Start Puzzle</button>
   <div id="moves">Moves left: 0</div>
   <div id="timer">Timer: 25:00</div>
+  <div id="score">Puzzles solved: 0</div>
 </div>
 
 <div id="puzzle-container"></div>
@@ -61,12 +83,14 @@ let carryoverMoves = 0;
 let puzzle = [];
 let emptyPos = {x: PUZZLE_SIZE-1, y: PUZZLE_SIZE-1};
 let img = null;
-let timer = 25 * 60; // 25 minutes in seconds
+let timer = 25 * 60; // 25 minutes
 let timerInterval;
+let puzzlesSolved = 0;
 
 const puzzleContainer = document.getElementById('puzzle-container');
 const movesDisplay = document.getElementById('moves');
 const timerDisplay = document.getElementById('timer');
+const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
 
@@ -93,10 +117,9 @@ startButton.addEventListener('click', () => {
 function initPuzzle() {
     puzzle = [];
     puzzleContainer.innerHTML = '';
-    puzzleContainer.style.gridTemplateColumns = `repeat(${PUZZLE_SIZE}, 100px)`;
-    puzzleContainer.style.gridTemplateRows = `repeat(${PUZZLE_SIZE}, 100px)`;
+    puzzleContainer.style.gridTemplateColumns = `repeat(${PUZZLE_SIZE}, 1fr)`;
+    puzzleContainer.style.gridTemplateRows = `repeat(${PUZZLE_SIZE}, 1fr)`;
 
-    // Create puzzle tiles
     for (let y = 0; y < PUZZLE_SIZE; y++) {
         puzzle[y] = [];
         for (let x = 0; x < PUZZLE_SIZE; x++) {
@@ -106,11 +129,9 @@ function initPuzzle() {
             }
             const tile = document.createElement('div');
             tile.className = 'tile';
-            tile.style.width = '100px';
-            tile.style.height = '100px';
             tile.style.backgroundImage = `url(${img.src})`;
-            tile.style.backgroundSize = `${PUZZLE_SIZE*100}px ${PUZZLE_SIZE*100}px`;
-            tile.style.backgroundPosition = `-${x*100}px -${y*100}px`;
+            tile.style.backgroundSize = `${PUZZLE_SIZE*100}% ${PUZZLE_SIZE*100}%`;
+            tile.style.backgroundPosition = `${(-x * 100)}% ${(-y * 100)}%`;
             tile.dataset.x = x;
             tile.dataset.y = y;
             tile.addEventListener('click', () => moveTile(x, y));
@@ -118,6 +139,7 @@ function initPuzzle() {
             puzzle[y][x] = tile;
         }
     }
+    emptyPos = {x: PUZZLE_SIZE-1, y: PUZZLE_SIZE-1};
     scramblePuzzle();
     updateMovesDisplay();
 }
@@ -143,7 +165,7 @@ function getNeighbors(x, y) {
 }
 
 function moveTile(x, y) {
-    if (movesLeft <= 0) {
+    if (movesLeft + carryoverMoves <= 0) {
         alert('Out of moves! Complete a 25-minute session to earn more.');
         return;
     }
@@ -152,9 +174,15 @@ function moveTile(x, y) {
     if ((dx + dy) === 1) {
         swapTiles({x, y}, emptyPos);
         emptyPos = {x, y};
-        movesLeft--;
+        if (carryoverMoves > 0) carryoverMoves--;
+        else movesLeft--;
         updateMovesDisplay();
-        if (checkWin()) alert('Puzzle Solved! Great job!');
+        if (checkWin()) {
+            puzzlesSolved++;
+            scoreDisplay.textContent = `Puzzles solved: ${puzzlesSolved}`;
+            alert('Puzzle Solved! Starting next puzzle...');
+            initPuzzle();
+        }
     }
 }
 
@@ -163,16 +191,8 @@ function swapTiles(pos1, pos2) {
     puzzle[pos1.y][pos1.x] = puzzle[pos2.y][pos2.x];
     puzzle[pos2.y][pos2.x] = temp;
 
-    if (puzzle[pos1.y][pos1.x]) {
-        puzzle[pos1.y][pos1.x].dataset.x = pos1.x;
-        puzzle[pos1.y][pos1.x].dataset.y = pos1.y;
-        puzzleContainer.appendChild(puzzle[pos1.y][pos1.x]);
-    }
-    if (puzzle[pos2.y][pos2.x]) {
-        puzzle[pos2.y][pos2.x].dataset.x = pos2.x;
-        puzzle[pos2.y][pos2.x].dataset.y = pos2.y;
-        puzzleContainer.appendChild(puzzle[pos2.y][pos2.x]);
-    }
+    if (puzzle[pos1.y][pos1.x]) puzzleContainer.appendChild(puzzle[pos1.y][pos1.x]);
+    if (puzzle[pos2.y][pos2.x]) puzzleContainer.appendChild(puzzle[pos2.y][pos2.x]);
 }
 
 function updateMovesDisplay() {
@@ -197,18 +217,17 @@ function startTimer() {
 }
 
 function checkWin() {
-    let count = 0;
     for (let y = 0; y < PUZZLE_SIZE; y++) {
         for (let x = 0; x < PUZZLE_SIZE; x++) {
             if (x === PUZZLE_SIZE-1 && y === PUZZLE_SIZE-1) continue;
             const tile = puzzle[y][x];
             if (!tile) return false;
             if (parseInt(tile.dataset.x) !== x || parseInt(tile.dataset.y) !== y) return false;
-            count++;
         }
     }
-    return count === PUZZLE_SIZE*PUZZLE_SIZE-1;
+    return true;
 }
 </script>
+
 </body>
 </html>
