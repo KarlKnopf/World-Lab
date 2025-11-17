@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productivity Sliding Puzzle</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+  }
+
+  #controls {
+    margin-bottom: 20px;
+  }
+
+  #puzzle-container {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 20px;
+    user-select: none;
+  }
+
+  .tile {
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+  }
+
+  #moves, #timer {
+    margin: 5px;
+    font-weight: bold;
+  }
+
+  button {
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <input type="file" id="imageInput" accept="image/*">
+  <button id="startButton">Start Puzzle</button>
+  <div id="moves">Moves left: 0</div>
+  <div id="timer">Timer: 25:00</div>
+</div>
+
+<div id="puzzle-container"></div>
+
+<script>
+const PUZZLE_SIZE = 4; // 4x4 puzzle
+const MOVES_PER_SESSION = 30; // moves earned per 25 min session
+let movesLeft = 0;
+let carryoverMoves = 0;
+let puzzle = [];
+let emptyPos = {x: PUZZLE_SIZE-1, y: PUZZLE_SIZE-1};
+let img = null;
+let timer = 25 * 60; // 25 minutes in seconds
+let timerInterval;
+
+const puzzleContainer = document.getElementById('puzzle-container');
+const movesDisplay = document.getElementById('moves');
+const timerDisplay = document.getElementById('timer');
+const imageInput = document.getElementById('imageInput');
+const startButton = document.getElementById('startButton');
+
+imageInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        img = new Image();
+        img.src = event.target.result;
+    }
+    reader.readAsDataURL(file);
+});
+
+startButton.addEventListener('click', () => {
+    if (!img) {
+        alert('Please select an image first.');
+        return;
+    }
+    initPuzzle();
+    startTimer();
+});
+
+function initPuzzle() {
+    puzzle = [];
+    puzzleContainer.innerHTML = '';
+    puzzleContainer.style.gridTemplateColumns = `repeat(${PUZZLE_SIZE}, 100px)`;
+    puzzleContainer.style.gridTemplateRows = `repeat(${PUZZLE_SIZE}, 100px)`;
+
+    // Create puzzle tiles
+    for (let y = 0; y < PUZZLE_SIZE; y++) {
+        puzzle[y] = [];
+        for (let x = 0; x < PUZZLE_SIZE; x++) {
+            if (x === PUZZLE_SIZE-1 && y === PUZZLE_SIZE-1) {
+                puzzle[y][x] = null; // empty space
+                continue;
+            }
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.style.width = '100px';
+            tile.style.height = '100px';
+            tile.style.backgroundImage = `url(${img.src})`;
+            tile.style.backgroundSize = `${PUZZLE_SIZE*100}px ${PUZZLE_SIZE*100}px`;
+            tile.style.backgroundPosition = `-${x*100}px -${y*100}px`;
+            tile.dataset.x = x;
+            tile.dataset.y = y;
+            tile.addEventListener('click', () => moveTile(x, y));
+            puzzleContainer.appendChild(tile);
+            puzzle[y][x] = tile;
+        }
+    }
+    scramblePuzzle();
+    updateMovesDisplay();
+}
+
+function scramblePuzzle() {
+    let moves = 1000;
+    while (moves > 0) {
+        const neighbors = getNeighbors(emptyPos.x, emptyPos.y);
+        const choice = neighbors[Math.floor(Math.random() * neighbors.length)];
+        swapTiles(emptyPos, choice);
+        emptyPos = {x: choice.x, y: choice.y};
+        moves--;
+    }
+}
+
+function getNeighbors(x, y) {
+    const neighbors = [];
+    if (x > 0) neighbors.push({x:x-1, y:y});
+    if (x < PUZZLE_SIZE-1) neighbors.push({x:x+1, y:y});
+    if (y > 0) neighbors.push({x:x, y:y-1});
+    if (y < PUZZLE_SIZE-1) neighbors.push({x:x, y:y+1});
+    return neighbors;
+}
+
+function moveTile(x, y) {
+    if (movesLeft <= 0) {
+        alert('Out of moves! Complete a 25-minute session to earn more.');
+        return;
+    }
+    const dx = Math.abs(x - emptyPos.x);
+    const dy = Math.abs(y - emptyPos.y);
+    if ((dx + dy) === 1) {
+        swapTiles({x, y}, emptyPos);
+        emptyPos = {x, y};
+        movesLeft--;
+        updateMovesDisplay();
+        if (checkWin()) alert('Puzzle Solved! Great job!');
+    }
+}
+
+function swapTiles(pos1, pos2) {
+    const temp = puzzle[pos1.y][pos1.x];
+    puzzle[pos1.y][pos1.x] = puzzle[pos2.y][pos2.x];
+    puzzle[pos2.y][pos2.x] = temp;
+
+    if (puzzle[pos1.y][pos1.x]) {
+        puzzle[pos1.y][pos1.x].dataset.x = pos1.x;
+        puzzle[pos1.y][pos1.x].dataset.y = pos1.y;
+        puzzleContainer.appendChild(puzzle[pos1.y][pos1.x]);
+    }
+    if (puzzle[pos2.y][pos2.x]) {
+        puzzle[pos2.y][pos2.x].dataset.x = pos2.x;
+        puzzle[pos2.y][pos2.x].dataset.y = pos2.y;
+        puzzleContainer.appendChild(puzzle[pos2.y][pos2.x]);
+    }
+}
+
+function updateMovesDisplay() {
+    movesDisplay.textContent = `Moves left: ${movesLeft + carryoverMoves}`;
+}
+
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timer = 25*60;
+    timerInterval = setInterval(() => {
+        timer--;
+        const minutes = String(Math.floor(timer/60)).padStart(2,'0');
+        const seconds = String(timer%60).padStart(2,'0');
+        timerDisplay.textContent = `Timer: ${minutes}:${seconds}`;
+        if (timer <= 0) {
+            clearInterval(timerInterval);
+            carryoverMoves += MOVES_PER_SESSION;
+            alert(`25 minutes complete! You earned ${MOVES_PER_SESSION} moves.`);
+            updateMovesDisplay();
+        }
+    }, 1000);
+}
+
+function checkWin() {
+    let count = 0;
+    for (let y = 0; y < PUZZLE_SIZE; y++) {
+        for (let x = 0; x < PUZZLE_SIZE; x++) {
+            if (x === PUZZLE_SIZE-1 && y === PUZZLE_SIZE-1) continue;
+            const tile = puzzle[y][x];
+            if (!tile) return false;
+            if (parseInt(tile.dataset.x) !== x || parseInt(tile.dataset.y) !== y) return false;
+            count++;
+        }
+    }
+    return count === PUZZLE_SIZE*PUZZLE_SIZE-1;
+}
+</script>
+</body>
+</html>
