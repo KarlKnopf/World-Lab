@@ -105,6 +105,7 @@
   <label for="timerInput">Work session (minutes): </label>
   <input type="number" id="timerInput" min="1" max="120" value="25">
   <button id="startButton">Start Puzzle</button>
+  <button id="startTimerButton" disabled>Start Timer</button>
 
   <div id="moves">Moves left: 0</div>
   <div class="bar-container">
@@ -147,6 +148,7 @@ const timerBar = document.getElementById('timerBar');
 const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
+const startTimerButton = document.getElementById('startTimerButton');
 const difficultySelect = document.getElementById('difficultySelect');
 const timerInput = document.getElementById('timerInput');
 
@@ -182,7 +184,14 @@ startButton.addEventListener('click', () => {
         alert('Please select at least one image first.');
         return;
     }
-    loadCurrentImage(initPuzzle);
+    loadCurrentImage(() => {
+        initPuzzle();
+        startTimerButton.disabled = false; // enable timer button once puzzle is ready
+    });
+});
+
+startTimerButton.addEventListener('click', () => {
+    startTimerButton.disabled = true; // prevent multiple starts
     startTimer();
 });
 
@@ -320,7 +329,8 @@ function startTimer() {
 }
 
 function updateTimerBar() {
-    const percent = ((parseInt(timerInput.value)*60 - timer) / (parseInt(timerInput.value)*60)) * 100;
+    const sessionMinutes = parseInt(timerInput.value) || 25;
+    const percent = ((sessionMinutes*60 - timer) / (sessionMinutes*60)) * 100;
     timerBar.style.width = `${percent}%`;
 }
 
