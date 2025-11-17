@@ -24,10 +24,10 @@
   #puzzle-container {
     display: grid;
     gap: 2px;
-    width: 90vw;      /* scales to screen width */
-    max-width: 400px; /* maximum size on desktop */
-    aspect-ratio: 1;  /* always square */
-    touch-action: manipulation; /* mobile friendly */
+    width: 90vw;
+    max-width: 400px;
+    aspect-ratio: 1;
+    touch-action: manipulation;
   }
 
   .tile {
@@ -50,7 +50,7 @@
     font-weight: bold;
   }
 
-  button {
+  button, select {
     padding: 8px 12px;
     margin: 2px;
     cursor: pointer;
@@ -67,6 +67,10 @@
 
 <div id="controls">
   <input type="file" id="imageInput" accept="image/*">
+  <select id="difficultySelect">
+    <option value="4">Normal (4x4)</option>
+    <option value="5">Hard (5x5)</option>
+  </select>
   <button id="startButton">Start Puzzle</button>
   <div id="moves">Moves left: 0</div>
   <div id="timer">Timer: 25:00</div>
@@ -76,16 +80,16 @@
 <div id="puzzle-container"></div>
 
 <script>
-const PUZZLE_SIZE = 4; // 4x4 puzzle
-const MOVES_PER_SESSION = 30; // moves earned per 25 min session
-let movesLeft = 0;
-let carryoverMoves = 0;
+let PUZZLE_SIZE = parseInt(localStorage.getItem('difficulty')) || 4;
+const MOVES_PER_SESSION = 30;
+let movesLeft = parseInt(localStorage.getItem('movesLeft')) || 0;
+let carryoverMoves = parseInt(localStorage.getItem('carryoverMoves')) || 0;
 let puzzle = [];
 let emptyPos = {x: PUZZLE_SIZE-1, y: PUZZLE_SIZE-1};
 let img = null;
-let timer = 25 * 60; // 25 minutes
+let timer = 25 * 60;
 let timerInterval;
-let puzzlesSolved = 0;
+let puzzlesSolved = parseInt(localStorage.getItem('puzzlesSolved')) || 0;
 
 const puzzleContainer = document.getElementById('puzzle-container');
 const movesDisplay = document.getElementById('moves');
@@ -93,6 +97,9 @@ const timerDisplay = document.getElementById('timer');
 const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
+const difficultySelect = document.getElementById('difficultySelect');
+
+difficultySelect.value = PUZZLE_SIZE;
 
 imageInput.addEventListener('change', e => {
     const file = e.target.files[0];
@@ -103,6 +110,11 @@ imageInput.addEventListener('change', e => {
         img.src = event.target.result;
     }
     reader.readAsDataURL(file);
+});
+
+difficultySelect.addEventListener('change', () => {
+    PUZZLE_SIZE = parseInt(difficultySelect.value);
+    localStorage.setItem('difficulty', PUZZLE_SIZE);
 });
 
 startButton.addEventListener('click', () => {
@@ -124,7 +136,7 @@ function initPuzzle() {
         puzzle[y] = [];
         for (let x = 0; x < PUZZLE_SIZE; x++) {
             if (x === PUZZLE_SIZE-1 && y === PUZZLE_SIZE-1) {
-                puzzle[y][x] = null; // empty space
+                puzzle[y][x] = null;
                 continue;
             }
             const tile = document.createElement('div');
@@ -177,9 +189,11 @@ function moveTile(x, y) {
         if (carryoverMoves > 0) carryoverMoves--;
         else movesLeft--;
         updateMovesDisplay();
+        saveProgress();
         if (checkWin()) {
             puzzlesSolved++;
             scoreDisplay.textContent = `Puzzles solved: ${puzzlesSolved}`;
+            saveProgress();
             alert('Puzzle Solved! Starting next puzzle...');
             initPuzzle();
         }
@@ -212,6 +226,7 @@ function startTimer() {
             carryoverMoves += MOVES_PER_SESSION;
             alert(`25 minutes complete! You earned ${MOVES_PER_SESSION} moves.`);
             updateMovesDisplay();
+            saveProgress();
         }
     }, 1000);
 }
@@ -226,6 +241,13 @@ function checkWin() {
         }
     }
     return true;
+}
+
+function saveProgress() {
+    localStorage.setItem('movesLeft', movesLeft);
+    localStorage.setItem('carryoverMoves', carryoverMoves);
+    localStorage.setItem('puzzlesSolved', puzzlesSolved);
+    localStorage.setItem('difficulty', PUZZLE_SIZE);
 }
 </script>
 
