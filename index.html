@@ -119,6 +119,11 @@
 
 <div id="puzzle-container"></div>
 
+<!-- Sound effects -->
+<audio id="moveSound" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_low.ogg"></audio>
+<audio id="completeSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="rewardSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
 <script>
 let PUZZLE_SIZE = parseInt(localStorage.getItem('difficulty')) || 4;
 const MOVES_PER_SESSION = 30;
@@ -141,6 +146,10 @@ const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
 const difficultySelect = document.getElementById('difficultySelect');
+
+const moveSound = document.getElementById('moveSound');
+const completeSound = document.getElementById('completeSound');
+const rewardSound = document.getElementById('rewardSound');
 
 difficultySelect.value = PUZZLE_SIZE;
 
@@ -242,6 +251,8 @@ function moveTile(x, y) {
     if ((dx + dy) === 1) {
         swapTiles({x, y}, emptyPos);
         emptyPos = {x, y};
+        moveSound.currentTime = 0;
+        moveSound.play();
         if (carryoverMoves > 0) carryoverMoves--;
         else movesLeft--;
         updateMovesDisplay();
@@ -250,6 +261,8 @@ function moveTile(x, y) {
             puzzlesSolved++;
             scoreDisplay.textContent = `Puzzles solved: ${puzzlesSolved}`;
             saveProgress();
+            completeSound.currentTime = 0;
+            completeSound.play();
             showConfetti();
             alert('Puzzle Solved! Loading next image...');
             nextImagePuzzle();
@@ -275,7 +288,7 @@ function swapTiles(pos1, pos2) {
 function updateMovesDisplay() {
     const totalMoves = movesLeft + carryoverMoves;
     movesDisplay.textContent = `Moves left: ${totalMoves}`;
-    const maxMoves = MOVES_PER_SESSION * 2; // assume a reasonable max for bar
+    const maxMoves = MOVES_PER_SESSION * 2; 
     movesBar.style.width = `${Math.min(totalMoves / maxMoves * 100, 100)}%`;
 }
 
@@ -292,6 +305,8 @@ function startTimer() {
         if (timer <= 0) {
             clearInterval(timerInterval);
             carryoverMoves += MOVES_PER_SESSION;
+            rewardSound.currentTime = 0;
+            rewardSound.play();
             animateMoveGain();
             alert(`25 minutes complete! You earned ${MOVES_PER_SESSION} moves.`);
             updateMovesDisplay();
@@ -307,7 +322,7 @@ function updateTimerBar() {
 
 function animateMoveGain() {
     movesBar.style.transition = 'width 0.4s, background-color 0.2s';
-    movesBar.style.backgroundColor = '#ffd700'; // gold flash
+    movesBar.style.backgroundColor = '#ffd700';
     setTimeout(() => {
         movesBar.style.backgroundColor = '#4caf50';
     }, 300);
