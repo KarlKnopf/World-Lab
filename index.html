@@ -19,13 +19,14 @@
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    width: 90vw;
+    max-width: 400px;
   }
 
   #puzzle-container {
     display: grid;
     gap: 2px;
-    width: 90vw;
-    max-width: 400px;
+    width: 100%;
     aspect-ratio: 1;
     touch-action: manipulation;
   }
@@ -43,6 +44,22 @@
     color: white;
     user-select: none;
     border-radius: 4px;
+  }
+
+  .bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 3px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background-color: #4caf50;
+    width: 0%;
+    transition: width 0.2s;
   }
 
   #moves, #timer, #score {
@@ -72,8 +89,17 @@
     <option value="5">Hard (5x5)</option>
   </select>
   <button id="startButton">Start Puzzle</button>
+
   <div id="moves">Moves left: 0</div>
+  <div class="bar-container">
+    <div id="movesBar" class="bar-fill"></div>
+  </div>
+
   <div id="timer">Timer: 25:00</div>
+  <div class="bar-container">
+    <div id="timerBar" class="bar-fill"></div>
+  </div>
+
   <div id="score">Puzzles solved: 0</div>
 </div>
 
@@ -94,7 +120,9 @@ let puzzlesSolved = parseInt(localStorage.getItem('puzzlesSolved')) || 0;
 
 const puzzleContainer = document.getElementById('puzzle-container');
 const movesDisplay = document.getElementById('moves');
+const movesBar = document.getElementById('movesBar');
 const timerDisplay = document.getElementById('timer');
+const timerBar = document.getElementById('timerBar');
 const scoreDisplay = document.getElementById('score');
 const imageInput = document.getElementById('imageInput');
 const startButton = document.getElementById('startButton');
@@ -167,6 +195,7 @@ function initPuzzle() {
     emptyPos = {x: PUZZLE_SIZE-1, y: PUZZLE_SIZE-1};
     scramblePuzzle();
     updateMovesDisplay();
+    updateTimerBar();
 }
 
 function scramblePuzzle() {
@@ -229,17 +258,22 @@ function swapTiles(pos1, pos2) {
 }
 
 function updateMovesDisplay() {
-    movesDisplay.textContent = `Moves left: ${movesLeft + carryoverMoves}`;
+    const totalMoves = movesLeft + carryoverMoves;
+    movesDisplay.textContent = `Moves left: ${totalMoves}`;
+    const maxMoves = MOVES_PER_SESSION * 2; // assume a reasonable max for bar
+    movesBar.style.width = `${Math.min(totalMoves / maxMoves * 100, 100)}%`;
 }
 
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timer = 25*60;
+    updateTimerBar();
     timerInterval = setInterval(() => {
         timer--;
         const minutes = String(Math.floor(timer/60)).padStart(2,'0');
         const seconds = String(timer%60).padStart(2,'0');
         timerDisplay.textContent = `Timer: ${minutes}:${seconds}`;
+        updateTimerBar();
         if (timer <= 0) {
             clearInterval(timerInterval);
             carryoverMoves += MOVES_PER_SESSION;
@@ -248,6 +282,11 @@ function startTimer() {
             saveProgress();
         }
     }, 1000);
+}
+
+function updateTimerBar() {
+    const percent = ((25*60 - timer) / (25*60)) * 100;
+    timerBar.style.width = `${percent}%`;
 }
 
 function checkWin() {
