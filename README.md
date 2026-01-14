@@ -29,6 +29,7 @@ World Lab is designed to be run locally.
 Install dependencies if needed:
 ```bash
 pip install numpy matplotlib
+```
 
 ## Running the Project
 
