@@ -8,13 +8,19 @@ TEMPORARY:
 - Cells are independent at generation time.
 
 STRUCTURAL:
-- The world is a 2D grid of fixed resolution.
+- The world is a 2D grid.
 - World generation is deterministic given a seed.
-- The world exists independently of visualization.
+
+KNOWN LIMITATIONS:
+- Terrain has no spatial coherence (no continents or ridges).
+- Increasing resolution does not increase realism.
+- Small changes to the algorithm may dramatically change output.
+- No meaningful notion of scale exists.
 
 NOT MODELED:
-- Geological processes
-- Climate systems
+- Erosion
+- Hydrology
+- Plate tectonics
 - Temporal evolution
 """
 
@@ -47,3 +53,4 @@ def generate_world(width=64, hight=64, seed=None):
     elevation = np.random.rand(hight,width)
     return elevation
     return np.random.rand(width,hight)
+
