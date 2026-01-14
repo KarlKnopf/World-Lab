@@ -2,17 +2,17 @@
 Visualization utilities for World Lab.
 
 ASSUMPTIONS:
-- Data is 2D and numeric.
-- Color represents magnitude, not categorical meaning.
+- Input data is 2D and numeric.
+
+KNOWN LIMITATIONS:
+- Color scales may exaggerate small differences.
+- Visual similarity does not imply model similarity.
+- Plots are not geographically meaningful.
 
 NOT MODELED:
-- Geographic projection
-- Scale or units
-- Visual realism
-
-NOTES:
-- Visualization is intended for comparison and inspection,
-  not presentation-quality rendering.
+- Projection
+- Physical units
+- Perceptual color calibration
 """
 
 import matplotlib.pyplot as plt
@@ -48,3 +48,4 @@ def show_worlds_side_by_side(worlds, titles=None, cmap='Set3', interpolation='ne
     cbar.set_label('Colorbar Label')
 
     plt.show()
+
