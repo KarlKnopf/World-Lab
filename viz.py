@@ -1,3 +1,19 @@
+"""
+Visualization utilities for World Lab.
+
+ASSUMPTIONS:
+- Data is 2D and numeric.
+- Color represents magnitude, not categorical meaning.
+
+NOT MODELED:
+- Geographic projection
+- Scale or units
+- Visual realism
+
+NOTES:
+- Visualization is intended for comparison and inspection,
+  not presentation-quality rendering.
+"""
 import matplotlib.pyplot as plt
 
 def show_world(grid, title='World Map', intropolation='nearest'):
@@ -29,5 +45,6 @@ def show_worlds_side_by_side(worlds, titles=None, cmap='Set3', interpolation='ne
 
     cbar = fig.colorbar(img, ax=axes, shrink=0.75, location='right')
     cbar.set_label('Colorbar Label')
+
 
     plt.show()
